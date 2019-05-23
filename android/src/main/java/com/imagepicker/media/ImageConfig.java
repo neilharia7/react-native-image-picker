@@ -21,6 +21,7 @@ public class ImageConfig
     public final int quality;
     public final int rotation;
     public final boolean saveToCameraRoll;
+    public final String extension;
 
     public ImageConfig(@Nullable final File original,
                        @Nullable final File resized,
@@ -28,7 +29,8 @@ public class ImageConfig
                        final int maxHeight,
                        final int quality,
                        final int rotation,
-                       final boolean saveToCameraRoll)
+                       final boolean saveToCameraRoll,
+                       final String extension)
     {
         this.original = original;
         this.resized = resized;
@@ -37,6 +39,7 @@ public class ImageConfig
         this.quality = quality;
         this.rotation = rotation;
         this.saveToCameraRoll = saveToCameraRoll;
+        this.extension = extension;
     }
 
     public @NonNull ImageConfig withMaxWidth(final int maxWidth)
@@ -44,7 +47,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, this.resized, maxWidth,
                 this.maxHeight, this.quality, this.rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, this.extension
         );
     }
 
@@ -53,7 +56,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
                 maxHeight, this.quality, this.rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, this.extension
         );
 
     }
@@ -63,7 +66,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
                 this.maxHeight, quality, this.rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, this.extension
         );
     }
 
@@ -72,7 +75,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
                 this.maxHeight, this.quality, rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, this.extension
         );
     }
 
@@ -82,15 +85,21 @@ public class ImageConfig
             //if it is a GIF file, always set quality to 100 to prevent compression
             String extension = MimeTypeMap.getFileExtensionFromUrl(original.getAbsolutePath());
             int quality = this.quality;
-            if(extension.contains("gif")){
+            String Extension = this.extension;
+            if (extension.contains("gif")) {
                 quality = 100;
+                Extension = "gif";
+            } else if (extension.contains("png")) {
+                Extension = "png";
+            } else if (extension.contains("jpeg")) {
+                Extension = "jpeg";
             }
         }
 
         return new ImageConfig(
                 original, this.resized, this.maxWidth,
                 this.maxHeight, quality, this.rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, extension
         );
     }
 
@@ -99,7 +108,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, resized, this.maxWidth,
                 this.maxHeight, this.quality, this.rotation,
-                this.saveToCameraRoll
+                this.saveToCameraRoll, this.extension
         );
     }
 
@@ -108,7 +117,7 @@ public class ImageConfig
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
                 this.maxHeight, this.quality, this.rotation,
-                saveToCameraRoll
+                saveToCameraRoll, this.extension
         );
     }
 
@@ -143,7 +152,11 @@ public class ImageConfig
                 saveToCameraRoll = storageOptions.getBoolean("cameraRoll");
             }
         }
-        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, quality, rotation, saveToCameraRoll);
+        String extension = "jpg";   // by default
+        if (options.hasKey("extension")) {
+            extension = options.getString("extension");
+        }
+        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, quality, rotation, saveToCameraRoll, extension);
     }
 
     public boolean useOriginal(int initialWidth,

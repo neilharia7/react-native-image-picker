@@ -1,5 +1,6 @@
 package com.imagepicker.utils;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -7,6 +8,7 @@ import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -78,6 +80,7 @@ public class MediaUtils
      * @param initialHeight
      * @return updated ImageConfig
      */
+    @TargetApi(Build.VERSION_CODES.KITKAT)
     public static @NonNull ImageConfig getResizedImage(@NonNull final Context context,
                                                        @NonNull final ReadableMap options,
                                                        @NonNull final ImageConfig imageConfig,
@@ -131,21 +134,22 @@ public class MediaUtils
         ExifInterface exif;
         try
         {
-            exif = new ExifInterface(result.original.getAbsolutePath());
+            if (result.original != null) {
+                exif = new ExifInterface(result.original.getAbsolutePath());
 
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
+                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
 
-            switch (orientation)
-            {
-                case 6:
-                    matrix.postRotate(90);
-                    break;
-                case 3:
-                    matrix.postRotate(180);
-                    break;
-                case 8:
-                    matrix.postRotate(270);
-                    break;
+                switch (orientation) {
+                    case 6:
+                        matrix.postRotate(90);
+                        break;
+                    case 3:
+                        matrix.postRotate(180);
+                        break;
+                    case 8:
+                        matrix.postRotate(270);
+                        break;
+                }
             }
         }
         catch (IOException e)
