@@ -25,7 +25,7 @@ public class ImageConfigTest
     @Test
     public void testOnImmutable()
     {
-        ImageConfig original = new ImageConfig(new File("original.txt"), new File("resized.txt"), 0, 0, 0, 0, false, "jpg");
+        ImageConfig original = new ImageConfig(new File("original.txt"), new File("resized.txt"), 0, 0, 0, 0, false);
         ImageConfig updated = original.withOriginalFile(null);
 
         assertNotNull("Original has got original file", original.original);
@@ -66,21 +66,19 @@ public class ImageConfigTest
     public void testParsingOptions()
     {
         WritableMap options = defaultOptions();
-        ImageConfig config = new ImageConfig(null, null, 0, 0, 0, 0, false, "jpg");
+        ImageConfig config = new ImageConfig(null, null, 0, 0, 0, 0, false);
         config = config.updateFromOptions(options);
         assertEquals("maxWidth", 1000, config.maxWidth);
         assertEquals("maxHeight", 600, config.maxHeight);
         assertEquals("quality", 50, config.quality);
         assertEquals("rotation", 135, config.rotation);
-        assertEquals("extension", "jpg", config.extension);
         assertTrue("storageOptions.cameraRoll", config.saveToCameraRoll);
-
     }
 
     @Test
     public void testUseOriginal()
     {
-        ImageConfig config = new ImageConfig(null, null, 800, 600, 100, 90, false, "jpg");
+        ImageConfig config = new ImageConfig(null, null, 800, 600, 100, 90, false);
 
         assertEquals("Image wont be resized", true, config.useOriginal(100, 100, 90));
         assertEquals("Image will be resized because of rotation", false, config.useOriginal(100, 100, 80));
@@ -94,7 +92,7 @@ public class ImageConfigTest
     @Test
     public void testGetActualFile()
     {
-        ImageConfig originalConfig = new ImageConfig(new File("original.txt"), null, 0, 0, 0, 0, false, "jpg");
+        ImageConfig originalConfig = new ImageConfig(new File("original.txt"), null, 0, 0, 0, 0, false);
         ImageConfig resizedConfig = originalConfig.withResizedFile(new File("resized.txt"));
 
         assertEquals("For config which has got only original file", "original.txt", originalConfig.getActualFile().getName());
@@ -108,8 +106,7 @@ public class ImageConfigTest
         options.putInt("maxHeight", 600);
         options.putDouble("quality", 0.5);
         options.putInt("rotation", 135);
-        // adding extension
-        options.putString("extension", "jpg");
+
         JavaOnlyMap storage = new JavaOnlyMap();
         storage.putBoolean("cameraRoll", true);
 

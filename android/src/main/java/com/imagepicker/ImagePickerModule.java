@@ -3,10 +3,13 @@ package com.imagepicker;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
@@ -19,9 +22,9 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.MutableInt;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
-import android.content.pm.PackageManager;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.bridge.ActivityEventListener;
@@ -30,9 +33,11 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.modules.core.PermissionAwareActivity;
+import com.facebook.react.modules.core.PermissionListener;
 import com.imagepicker.media.ImageConfig;
-import com.imagepicker.permissions.PermissionUtils;
 import com.imagepicker.permissions.OnImagePickerPermissionsCallback;
+import com.imagepicker.permissions.PermissionUtils;
 import com.imagepicker.utils.MediaUtils.ReadExifResult;
 import com.imagepicker.utils.RealPathUtil;
 import com.imagepicker.utils.UI;
@@ -48,12 +53,13 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-import com.facebook.react.modules.core.PermissionListener;
-import com.facebook.react.modules.core.PermissionAwareActivity;
-
-import static com.imagepicker.utils.MediaUtils.*;
+import static com.imagepicker.utils.MediaUtils.RolloutPhotoResult;
 import static com.imagepicker.utils.MediaUtils.createNewFile;
+import static com.imagepicker.utils.MediaUtils.fileScan;
 import static com.imagepicker.utils.MediaUtils.getResizedImage;
+import static com.imagepicker.utils.MediaUtils.readExifInterface;
+import static com.imagepicker.utils.MediaUtils.removeUselessFiles;
+import static com.imagepicker.utils.MediaUtils.rolloutPhotoFromCamera;
 
 public class ImagePickerModule extends ReactContextBaseJavaModule
         implements ActivityEventListener {
@@ -73,7 +79,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     private ReadableMap options;
     private Boolean noData = false;
     private Boolean pickVideo = false;
-    private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false, "jpg");
+    private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
 
     @Deprecated
     private int videoQuality = 1;
@@ -140,7 +146,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
         this.callback = callback;
         this.options = options;
-        imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false, "jpg");
+        imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
 
         final AlertDialog dialog = UI.chooseDialog(this, options, new UI.OnAction() {
             @Override
@@ -332,6 +338,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         }
 
         Uri uri = null;
+        String extension = null;
         switch (requestCode) {
             case REQUEST_LAUNCH_IMAGE_CAPTURE:
                 uri = cameraCaptureURI;
@@ -341,7 +348,16 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
                 uri = data.getData();
                 String realPath = getRealPathFromURI(uri);
 
-                // getting the extension
+                // adding key for getting the file extension
+                String[] filePathColumn = {MediaStore.Images.Media.DATA};
+                Cursor cursor = activity.getContentResolver().query(uri, filePathColumn, null, null, null);
+                if (cursor.moveToFirst()) {
+                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                    String filePath = cursor.getString(columnIndex);
+                    extension = filePath.substring(filePath.lastIndexOf(".") + 1);
+
+                    responseHelper.putString("file_extension", extension);
+                }
 
                 final boolean isUrl = !TextUtils.isEmpty(realPath) &&
                         Patterns.WEB_URL.matcher(realPath).matches();
